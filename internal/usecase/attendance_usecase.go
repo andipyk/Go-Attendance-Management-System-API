@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"golang-tes/internal/domain"
 	"time"
 
@@ -27,7 +26,7 @@ func (u *attendanceUsecase) MarkAttendance(ctx context.Context, attendance *doma
 		return err
 	}
 	if user == nil {
-		return errors.New("user not found")
+		return domain.ErrUserNotFound
 	}
 
 	// Check if attendance already exists for today
@@ -37,7 +36,12 @@ func (u *attendanceUsecase) MarkAttendance(ctx context.Context, attendance *doma
 		return err
 	}
 	if existing != nil {
-		return errors.New("attendance already marked for today")
+		return domain.ErrAttendanceAlreadyMarked
+	}
+
+	// Set default status if not provided
+	if attendance.Status == "" {
+		attendance.Status = domain.StatusPresent
 	}
 
 	// Continue with marking attendance
@@ -48,7 +52,14 @@ func (u *attendanceUsecase) MarkAttendance(ctx context.Context, attendance *doma
 }
 
 func (u *attendanceUsecase) GetAttendanceByDate(ctx context.Context, date time.Time) ([]domain.Attendance, error) {
-	return u.attendanceRepo.GetByDate(ctx, date)
+	attendances, err := u.attendanceRepo.GetByDate(ctx, date)
+	if err != nil {
+		return nil, err
+	}
+	if len(attendances) == 0 {
+		return nil, domain.ErrAttendanceNotFound
+	}
+	return attendances, nil
 }
 
 func (u *attendanceUsecase) GetUserAttendance(ctx context.Context, userID string) ([]domain.Attendance, error) {
@@ -57,8 +68,16 @@ func (u *attendanceUsecase) GetUserAttendance(ctx context.Context, userID string
 		return nil, err
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, domain.ErrUserNotFound
 	}
 
-	return u.attendanceRepo.GetByUserID(ctx, userID)
+	attendances, err := u.attendanceRepo.GetByUserID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if len(attendances) == 0 {
+		return nil, domain.ErrAttendanceNotFound
+	}
+
+	return attendances, nil
 }

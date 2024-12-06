@@ -6,6 +6,7 @@ import (
 
 	"golang-tes/internal/domain"
 	"golang-tes/internal/utils"
+	"golang-tes/internal/utils/validator"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,13 +32,18 @@ type getAttendanceRequest struct {
 func (h *AttendanceHandler) MarkAttendance(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "user ID not found in context")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", domain.ErrUnauthorized.Error())
 		return
 	}
 
 	var req markAttendanceRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", domain.ErrInvalidInput.Error())
+		return
+	}
+
+	if err := validator.ValidateAttendanceStatus(req.Status); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid attendance status", err.Error())
 		return
 	}
 
@@ -48,6 +54,10 @@ func (h *AttendanceHandler) MarkAttendance(c *gin.Context) {
 	}
 
 	err := h.attendanceUsecase.MarkAttendance(c.Request.Context(), attendance)
+	if err == domain.ErrAttendanceAlreadyMarked {
+		utils.ErrorResponse(c, http.StatusConflict, "Failed to mark attendance", err.Error())
+		return
+	}
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to mark attendance", err.Error())
 		return
@@ -59,13 +69,13 @@ func (h *AttendanceHandler) MarkAttendance(c *gin.Context) {
 func (h *AttendanceHandler) GetAttendance(c *gin.Context) {
 	var req getAttendanceRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", domain.ErrInvalidInput.Error())
 		return
 	}
 
-	date, err := time.Parse("2006-01-02", req.Date)
+	date, err := time.Parse(domain.DateFormat, req.Date)
 	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid date format", err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid date format", domain.ErrInvalidInput.Error())
 		return
 	}
 
@@ -81,11 +91,15 @@ func (h *AttendanceHandler) GetAttendance(c *gin.Context) {
 func (h *AttendanceHandler) GetUserAttendance(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
-		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", "user ID not found in context")
+		utils.ErrorResponse(c, http.StatusUnauthorized, "Unauthorized", domain.ErrUnauthorized.Error())
 		return
 	}
 
 	attendances, err := h.attendanceUsecase.GetUserAttendance(c.Request.Context(), userID)
+	if err == domain.ErrUserNotFound {
+		utils.ErrorResponse(c, http.StatusNotFound, "Failed to get user attendance records", err.Error())
+		return
+	}
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to get user attendance records", err.Error())
 		return

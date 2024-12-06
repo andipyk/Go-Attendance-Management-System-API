@@ -5,6 +5,7 @@ import (
 
 	"golang-tes/internal/domain"
 	"golang-tes/internal/utils"
+	"golang-tes/internal/utils/validator"
 
 	"github.com/gin-gonic/gin"
 )
@@ -40,7 +41,20 @@ type updateProfileRequest struct {
 func (h *UserHandler) Register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", domain.ErrInvalidInput.Error())
+		return
+	}
+
+	if err := validator.ValidateEmail(req.Email); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid email", err.Error())
+		return
+	}
+	if err := validator.ValidatePassword(req.Password); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid password", err.Error())
+		return
+	}
+	if err := validator.ValidateName(req.Name); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid name", err.Error())
 		return
 	}
 
@@ -48,10 +62,22 @@ func (h *UserHandler) Register(c *gin.Context) {
 		Name:     req.Name,
 		Email:    req.Email,
 		Password: req.Password,
-		Role:     req.Role,
+		Role:     domain.RoleUser,
+	}
+
+	if req.Role != "" {
+		if err := validator.ValidateUserRole(req.Role); err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, "Invalid role", err.Error())
+			return
+		}
+		user.Role = req.Role
 	}
 
 	err := h.userUsecase.Register(c.Request.Context(), user)
+	if err == domain.ErrEmailExists {
+		utils.ErrorResponse(c, http.StatusConflict, "Registration failed", err.Error())
+		return
+	}
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusInternalServerError, "Failed to register user", err.Error())
 		return
@@ -63,13 +89,22 @@ func (h *UserHandler) Register(c *gin.Context) {
 func (h *UserHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", err.Error())
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid request", domain.ErrInvalidInput.Error())
+		return
+	}
+
+	if err := validator.ValidateEmail(req.Email); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "Invalid email", err.Error())
 		return
 	}
 
 	token, err := h.userUsecase.Login(c.Request.Context(), req.Email, req.Password)
-	if err != nil {
+	if err == domain.ErrInvalidCredentials {
 		utils.ErrorResponse(c, http.StatusUnauthorized, "Login failed", err.Error())
+		return
+	}
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, "Login failed", err.Error())
 		return
 	}
 

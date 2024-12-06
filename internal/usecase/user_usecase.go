@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"golang-tes/internal/domain"
 	"time"
 
@@ -30,7 +29,7 @@ func (u *userUsecase) Register(ctx context.Context, user *domain.User) error {
 		return err
 	}
 	if existingUser != nil {
-		return errors.New("email already registered")
+		return domain.ErrEmailExists
 	}
 
 	// Hash password
@@ -43,7 +42,7 @@ func (u *userUsecase) Register(ctx context.Context, user *domain.User) error {
 	user.ID = uuid.New().String()
 	user.Password = string(hashedPassword)
 	if user.Role == "" {
-		user.Role = "user"
+		user.Role = domain.RoleUser
 	}
 
 	return u.userRepo.Create(ctx, user)
@@ -55,13 +54,13 @@ func (u *userUsecase) Login(ctx context.Context, email, password string) (string
 		return "", err
 	}
 	if user == nil {
-		return "", errors.New("invalid email or password")
+		return "", domain.ErrInvalidCredentials
 	}
 
 	// Check password
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
 	if err != nil {
-		return "", errors.New("invalid email or password")
+		return "", domain.ErrInvalidCredentials
 	}
 
 	// Generate JWT token
@@ -81,7 +80,14 @@ func (u *userUsecase) Login(ctx context.Context, email, password string) (string
 }
 
 func (u *userUsecase) GetProfile(ctx context.Context, id string) (*domain.User, error) {
-	return u.userRepo.GetByID(ctx, id)
+	user, err := u.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+	return user, nil
 }
 
 func (u *userUsecase) UpdateProfile(ctx context.Context, user *domain.User) error {
@@ -90,7 +96,7 @@ func (u *userUsecase) UpdateProfile(ctx context.Context, user *domain.User) erro
 		return err
 	}
 	if existingUser == nil {
-		return errors.New("user not found")
+		return domain.ErrUserNotFound
 	}
 
 	// If password is provided, hash it
