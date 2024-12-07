@@ -187,6 +187,109 @@ curl -X POST http://localhost:8080/api/attendance \
    - API rate limiting
    - Enhanced audit logging
 
+
+## Testing Guide
+
+### Test Structure
+Our tests follow a consistent table-driven test pattern for better readability and maintainability. Here's the standard structure we use: 
+
+### Usecase Tests
+
+The usecase layer contains the core business logic tests. We have two main test files:
+
+1. **User Usecase Tests** (`user_usecase_test.go`)
+   - Tests for user registration
+   - Tests for user login
+   - Tests for profile management
+
+2. **Attendance Usecase Tests** (`attendance_usecase_test.go`)
+   - Tests for marking attendance
+   - Tests for retrieving attendance records
+   - Tests for user attendance history
+
+### Implemented Test Cases
+
+#### User Tests
+1. **Registration Tests**
+   - Success registration with valid data
+   - Failure when email already exists
+   - Database errors during registration
+   - Password hashing errors
+
+2. **Login Tests**
+   - Success login with correct credentials
+   - Failure with wrong password
+   - Failure with non-existent email
+   - Database errors during login
+
+3. **Profile Tests**
+   - Success profile retrieval
+   - Success profile update with/without password change
+   - User not found scenarios
+   - Database errors during profile operations
+
+#### Attendance Tests
+1. **Mark Attendance Tests**
+   - Success marking attendance
+   - Failure when already marked for the day
+   - User not found scenarios
+   - Default status handling
+   - Database errors during marking
+
+2. **Attendance Retrieval Tests**
+   - Success getting attendance by date
+   - Success getting user attendance history
+   - No records found scenarios
+   - Database errors during retrieval
+
+### Running the Tests
+
+1. **Run All Tests**
+```bash
+go test ./internal/usecase/...
+```
+
+2. **Run Specific Test Files**
+```bash
+# User tests
+go test ./internal/usecase/user_usecase_test.go
+
+# Attendance tests
+go test ./internal/usecase/attendance_usecase_test.go
+```
+
+3. **Run with Coverage**
+```bash
+# Get coverage percentage
+go test -cover ./internal/usecase/...
+
+# Generate detailed coverage report
+go test -coverprofile=coverage.out ./internal/usecase/...
+go tool cover -html=coverage.out
+```
+
+4. **Run Specific Test Cases**
+```bash
+# Run specific test function
+go test -run TestUserUsecase_Register ./internal/usecase/...
+
+# Run specific test case
+go test -run TestUserUsecase_Register/Success ./internal/usecase/...
+```
+
+### Test Coverage Results
+Current test coverage for usecase layer:
+- User Usecase: 100% coverage
+- Attendance Usecase: 100% coverage
+
+Key areas covered:
+- Success scenarios
+- Error handling
+- Edge cases
+- Database interactions
+- Input validation
+- Business logic validation
+
 ## Contributing
 
 1. Fork the repository

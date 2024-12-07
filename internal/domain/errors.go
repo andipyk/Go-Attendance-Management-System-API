@@ -25,3 +25,8 @@ var (
 	ErrAttendanceAlreadyMarked = errors.New("attendance already marked for today")
 	ErrInvalidAttendanceStatus = errors.New("invalid attendance status")
 )
+
+// Database specific errors
+var (
+	ErrDatabase = errors.New("database error")
+)
