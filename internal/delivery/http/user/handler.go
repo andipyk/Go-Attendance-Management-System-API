@@ -38,6 +38,18 @@ type updateProfileRequest struct {
 	Password string `json:"password" binding:"omitempty,min=6"`
 }
 
+// Register godoc
+// @Summary Register a new user
+// @Description Register a new user with the provided details
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body registerRequest true "User registration details"
+// @Success 201 {object} utils.Response "User registered successfully"
+// @Failure 400 {object} utils.Response "Invalid request"
+// @Failure 409 {object} utils.Response "Email already exists"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /users/register [post]
 func (h *UserHandler) Register(c *gin.Context) {
 	var req registerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -86,6 +98,18 @@ func (h *UserHandler) Register(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "User registered successfully", nil)
 }
 
+// Login godoc
+// @Summary Login user
+// @Description Authenticate user and return JWT token
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body loginRequest true "User login credentials"
+// @Success 200 {object} utils.Response{data=map[string]string{token=string}} "Login successful"
+// @Failure 400 {object} utils.Response "Invalid request"
+// @Failure 401 {object} utils.Response "Invalid credentials"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /users/login [post]
 func (h *UserHandler) Login(c *gin.Context) {
 	var req loginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -111,6 +135,16 @@ func (h *UserHandler) Login(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Login successful", gin.H{"token": token})
 }
 
+// GetProfile godoc
+// @Summary Get user profile
+// @Description Get the profile of the authenticated user
+// @Tags users
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.Response{data=domain.User} "Profile retrieved successfully"
+// @Failure 401 {object} utils.Response "Unauthorized"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /users/profile [get]
 func (h *UserHandler) GetProfile(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
@@ -127,6 +161,19 @@ func (h *UserHandler) GetProfile(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Profile retrieved successfully", user)
 }
 
+// UpdateProfile godoc
+// @Summary Update user profile
+// @Description Update the profile of the authenticated user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body updateProfileRequest true "User profile update details"
+// @Success 200 {object} utils.Response "Profile updated successfully"
+// @Failure 400 {object} utils.Response "Invalid request"
+// @Failure 401 {object} utils.Response "Unauthorized"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /users/profile [put]
 func (h *UserHandler) UpdateProfile(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {

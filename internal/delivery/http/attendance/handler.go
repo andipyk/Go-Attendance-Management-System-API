@@ -29,6 +29,20 @@ type getAttendanceRequest struct {
 	Date string `form:"date" binding:"required" time_format:"2006-01-02"`
 }
 
+// MarkAttendance godoc
+// @Summary Mark attendance
+// @Description Mark attendance for the authenticated user
+// @Tags attendance
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body markAttendanceRequest true "Attendance status"
+// @Success 201 {object} utils.Response "Attendance marked successfully"
+// @Failure 400 {object} utils.Response "Invalid request"
+// @Failure 401 {object} utils.Response "Unauthorized"
+// @Failure 409 {object} utils.Response "Attendance already marked"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /attendance [post]
 func (h *AttendanceHandler) MarkAttendance(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {
@@ -66,6 +80,18 @@ func (h *AttendanceHandler) MarkAttendance(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusCreated, "Attendance marked successfully", nil)
 }
 
+// GetAttendance godoc
+// @Summary Get all attendance records by date
+// @Description Get attendance records for all users on a specific date
+// @Tags attendance
+// @Produce json
+// @Security BearerAuth
+// @Param date query string true "Date in YYYY-MM-DD format" Format(date)
+// @Success 200 {object} utils.Response{data=[]domain.Attendance} "Attendance records retrieved successfully"
+// @Failure 400 {object} utils.Response "Invalid request"
+// @Failure 401 {object} utils.Response "Unauthorized"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /attendance [get]
 func (h *AttendanceHandler) GetAttendance(c *gin.Context) {
 	var req getAttendanceRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -88,6 +114,17 @@ func (h *AttendanceHandler) GetAttendance(c *gin.Context) {
 	utils.SuccessResponse(c, http.StatusOK, "Attendance records retrieved successfully", attendances)
 }
 
+// GetUserAttendance godoc
+// @Summary Get user attendance records
+// @Description Get all attendance records for the authenticated user
+// @Tags attendance
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} utils.Response{data=[]domain.Attendance} "User attendance records retrieved successfully"
+// @Failure 401 {object} utils.Response "Unauthorized"
+// @Failure 404 {object} utils.Response "User not found"
+// @Failure 500 {object} utils.Response "Internal server error"
+// @Router /attendance/user [get]
 func (h *AttendanceHandler) GetUserAttendance(c *gin.Context) {
 	userID := c.GetString("user_id")
 	if userID == "" {

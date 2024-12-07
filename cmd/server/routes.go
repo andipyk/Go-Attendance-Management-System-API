@@ -7,11 +7,16 @@ import (
 	"golang-tes/internal/middleware"
 
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func setupRoutes(router *gin.Engine, cfg *config.Config, userHandler *user.UserHandler, attendanceHandler *attendance.AttendanceHandler) {
 	// Create middleware
 	authMiddleware := middleware.NewAuthMiddleware(cfg.JWTSecret)
+
+	// Swagger documentation
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// Public routes
 	router.POST("/api/users/register", userHandler.Register)
